@@ -3,7 +3,7 @@ package builtins
 // IsBuiltIn checks if a command is a builtin
 func IsBuiltIn(name string) bool {
 	switch name {
-	case "exit", "echo":
+	case "exit", "echo", "pwd", "type":
 		return true
 	default:
 		return false
@@ -17,5 +17,9 @@ func RunBuiltIn(name string, args []string) {
 		Exit(args)
 	case "echo":
 		Echo(args)
+	case "pwd":
+		Pwd(args)
+	case "type":
+		Type(args)
 	}
 }
