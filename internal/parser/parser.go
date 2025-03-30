@@ -1,6 +1,8 @@
 package parser
 
-import "strings"
+import (
+	"strings"
+)
 
 // Parse splits the input string into a Command (command + args)
 // e.g. input: "ls -ls/tmp" => Command{Name: "ls", Args: ["-la", "/tmp"]}
@@ -27,40 +29,55 @@ func tokenize(input string) []string {
 	for i := 0; i < len(input); i++ {
 		ch := input[i]
 
-		if escaped {
-			current.WriteByte(ch)
-			escaped = false
-			continue
-		}
-
-		switch ch {
-		case '\\':
-			escaped = true
-
-		case '\'':
-			if inDoubleQuote {
-				current.WriteByte(ch)
+		switch {
+		case inSingleQuote:
+			if ch == '\'' {
+				// End of single quote
+				inSingleQuote = false
 			} else {
-				inSingleQuote = !inSingleQuote
+				current.WriteByte(ch)
 			}
 
-		case '"':
-			if inSingleQuote {
-				current.WriteByte(ch)
+		case inDoubleQuote:
+			if escaped {
+				switch ch {
+				case '"', '\\':
+					current.WriteByte(ch)
+				default:
+					current.WriteByte('\\')
+					current.WriteByte(ch)
+				}
+				escaped = false
+			} else if ch == '\\' {
+				escaped = true
+			} else if ch == '"' {
+				inDoubleQuote = false
 			} else {
-				inDoubleQuote = !inDoubleQuote
-			}
-
-		case ' ', '\t':
-			if inSingleQuote || inDoubleQuote {
 				current.WriteByte(ch)
-			} else if current.Len() > 0 {
-				tokens = append(tokens, current.String())
-				current.Reset()
 			}
 
 		default:
-			current.WriteByte(ch)
+			if escaped {
+				current.WriteByte(ch)
+				escaped = false
+				continue
+			}
+
+			switch ch {
+			case '\\':
+				escaped = true
+			case '\'':
+				inSingleQuote = true
+			case '"':
+				inDoubleQuote = true
+			case ' ', '\t':
+				if current.Len() > 0 {
+					tokens = append(tokens, current.String())
+					current.Reset()
+				}
+			default:
+				current.WriteByte(ch)
+			}
 		}
 
 	}
