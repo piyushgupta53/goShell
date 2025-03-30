@@ -3,6 +3,7 @@ package builtins
 import (
 	"fmt"
 	"os"
+	"os/exec"
 )
 
 func Type(args []string) {
@@ -14,8 +15,13 @@ func Type(args []string) {
 	for _, name := range args {
 		if IsBuiltIn(name) {
 			fmt.Printf("%s is a shell builtin\n", name)
+			continue
+		}
+
+		// Check if executable is in PATH
+		if path, err := exec.LookPath(name); err == nil {
+			fmt.Printf("%s is %s\n", name, path)
 		} else {
-			// Will handle executables in Step 10
 			fmt.Fprintf(os.Stderr, "%s: not found\n", name)
 		}
 	}
