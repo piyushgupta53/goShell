@@ -3,13 +3,15 @@ package builtins
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 // Cd changes the working directory
 func Cd(args []string) {
 	var targetDir string
 
-	if len(args) == 0 || args[0] == "~" {
+	switch {
+	case len(args) == 0 || args[0] == "~":
 		// No args or ~ => go to home dir
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -18,12 +20,16 @@ func Cd(args []string) {
 		}
 
 		targetDir = home
-	} else {
-		// We'll support args in the next steps
-		fmt.Fprintln(os.Stderr, "cd: unsupported usage — only 'cd' and 'cd ~' work for now")
-		return
+
+	case strings.HasPrefix(args[0], "/"):
+		// Absolute path
+		targetDir = args[0]
+	default:
+		// Relative path
+		targetDir = args[0]
 	}
 
+	// Try to change directory
 	if err := os.Chdir(targetDir); err != nil {
 		fmt.Fprintf(os.Stderr, "cd: %v\n", err)
 	}
