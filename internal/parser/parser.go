@@ -58,6 +58,7 @@ func tokenize(input string) []string {
 
 		default:
 			if escaped {
+				// Always treat next character literally
 				current.WriteByte(ch)
 				escaped = false
 				continue
@@ -82,7 +83,6 @@ func tokenize(input string) []string {
 
 	}
 
-	// flush last tokens
 	if current.Len() > 0 {
 		tokens = append(tokens, current.String())
 	}
