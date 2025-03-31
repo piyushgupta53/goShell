@@ -37,17 +37,54 @@ func Execute(cmd *parser.Command) {
 		}
 	}
 
-	// Check if command exists in PATH
-
 	// Setup command with args
 	execCmd := exec.Command(execPath, cmd.Args...)
 	execCmd.Stdin = os.Stdin
-	execCmd.Stdout = os.Stdout
-	execCmd.Stderr = os.Stderr
 
-	// Execute
-	if err := execCmd.Run(); err != nil {
-		// Note: this includes exit code errors, permissions etc,
+	// Don't set stdout/stderr by default - wait to see if we have redirections
+	defaultStdout := os.Stdout
+	defaultStderr := os.Stderr
+
+	// Open files for redirection
+	var redirFiles []*os.File
+	for _, r := range cmd.Redirections {
+		flag := os.O_CREATE | os.O_WRONLY
+
+		if r.Append {
+			flag |= os.O_APPEND
+		} else {
+			flag |= os.O_TRUNC
+		}
+
+		f, err := os.OpenFile(r.Target, flag, 0644)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "redirection error: %v\n", err)
+			return
+		}
+
+		redirFiles = append(redirFiles, f)
+
+		switch r.Fd {
+		case 1:
+			defaultStdout = f
+		case 2:
+			defaultStderr = f
+		}
+	}
+
+	// Set the final output destinations
+	execCmd.Stdout = defaultStdout
+	execCmd.Stderr = defaultStderr
+
+	// Run the command
+	err = execCmd.Run()
+
+	// Close redirection files
+	for _, f := range redirFiles {
+		_ = f.Close()
+	}
+
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s: execution failed: %v\n", cmd.Name, err)
 	}
 }

@@ -7,15 +7,53 @@ import (
 // Parse splits the input string into a Command (command + args)
 // e.g. input: "ls -ls/tmp" => Command{Name: "ls", Args: ["-la", "/tmp"]}
 func Parse(input string) *Command {
-	tokens := tokenize(input)
-
-	if len(tokens) == 0 {
+	rawTokens := tokenize(input)
+	if len(rawTokens) == 0 {
 		return nil
 	}
 
+	var name string
+	var args []string
+	var redirs []Redirection
+
+	i := 0
+	for i < len(rawTokens) {
+		token := rawTokens[i]
+
+		switch token {
+		case ">", ">>", "2>", "2>>":
+			if i+1 >= len(rawTokens) {
+				//missing filename
+				return nil
+			}
+
+			target := rawTokens[i+1]
+			shouldAppend := strings.HasSuffix(token, ">>")
+			fd := 1
+			if strings.HasPrefix(token, "2") {
+				fd = 2
+			}
+			redirs = append(redirs, Redirection{
+				Fd:     fd,
+				Append: shouldAppend,
+				Target: target,
+			})
+			i += 2 // skip operator and filename
+
+		default:
+			if name == "" {
+				name = token
+			} else {
+				args = append(args, token)
+			}
+			i++
+		}
+	}
+
 	return &Command{
-		Name: tokens[0],
-		Args: tokens[1:],
+		Name:         name,
+		Args:         args,
+		Redirections: redirs,
 	}
 }
 
