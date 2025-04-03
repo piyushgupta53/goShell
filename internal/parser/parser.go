@@ -2,6 +2,8 @@ package parser
 
 import (
 	"strings"
+
+	"github.com/piyushgupta53/goShell/internal/builtins"
 )
 
 // Parse splits the input string into a Command (command + args)
@@ -45,6 +47,15 @@ func Parse(input string) *Command {
 		// Handle command name and arguments
 		if name == "" {
 			name = token
+			// Check if it's a builtin command
+			if builtins.IsBuiltIn(name) {
+				// Builtin commands don't need path resolution
+				return &Command{
+					Name:         name,
+					Args:         args,
+					Redirections: redirs,
+				}
+			}
 		} else {
 			args = append(args, token)
 		}

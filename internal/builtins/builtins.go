@@ -1,5 +1,7 @@
 package builtins
 
+var builtinList = []string{"cd", "echo", "exit", "pwd", "type"}
+
 // IsBuiltIn checks if a command is a builtin
 func IsBuiltIn(name string) bool {
 	switch name {
@@ -24,4 +26,8 @@ func RunBuiltIn(name string, args []string) {
 	case "cd":
 		Cd(args)
 	}
+}
+
+func AllBuiltIns() []string {
+	return builtinList
 }

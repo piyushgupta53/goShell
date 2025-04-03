@@ -1,0 +1,2 @@
+ls: /nonexistent: No such file or directory
+ls: /doesnotexist: No such file or directory
