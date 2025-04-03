@@ -20,15 +20,15 @@ func Parse(input string) *Command {
 	for i < len(rawTokens) {
 		token := rawTokens[i]
 
-		switch token {
-		case ">", ">>", "2>", "2>>":
+		// Handle redirections
+		if token == ">" || token == ">>" || token == "2>" || token == "2>>" {
 			if i+1 >= len(rawTokens) {
 				//missing filename
 				return nil
 			}
 
 			target := rawTokens[i+1]
-			shouldAppend := strings.HasSuffix(token, ">>")
+			shouldAppend := token == ">>" || token == "2>>"
 			fd := 1
 			if strings.HasPrefix(token, "2") {
 				fd = 2
@@ -39,15 +39,16 @@ func Parse(input string) *Command {
 				Target: target,
 			})
 			i += 2 // skip operator and filename
-
-		default:
-			if name == "" {
-				name = token
-			} else {
-				args = append(args, token)
-			}
-			i++
+			continue
 		}
+
+		// Handle command name and arguments
+		if name == "" {
+			name = token
+		} else {
+			args = append(args, token)
+		}
+		i++
 	}
 
 	return &Command{

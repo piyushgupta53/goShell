@@ -48,12 +48,12 @@ func Execute(cmd *parser.Command) {
 	// Open files for redirection
 	var redirFiles []*os.File
 	for _, r := range cmd.Redirections {
-		flag := os.O_CREATE | os.O_WRONLY
-
+		// Set appropriate flags based on append mode
+		var flag int
 		if r.Append {
-			flag |= os.O_APPEND
+			flag = os.O_CREATE | os.O_WRONLY | os.O_APPEND
 		} else {
-			flag |= os.O_TRUNC
+			flag = os.O_CREATE | os.O_WRONLY | os.O_TRUNC
 		}
 
 		f, err := os.OpenFile(r.Target, flag, 0644)
@@ -81,7 +81,9 @@ func Execute(cmd *parser.Command) {
 
 	// Close redirection files
 	for _, f := range redirFiles {
-		_ = f.Close()
+		if err := f.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "error closing redirection: %v\n", err)
+		}
 	}
 
 	if err != nil {
