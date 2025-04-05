@@ -2,48 +2,121 @@ package completion
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/piyushgupta53/goShell/internal/builtins"
 )
 
+var cachedExecutables = []string{}
+
+func init() {
+	cachedExecutables = loadExecutablesFromPATH()
+}
+
 func Trigger(line string) {
-	// extract the last word before the cursor(naive split)
 	parts := strings.Fields(line)
 	if len(parts) == 0 {
 		return
 	}
-
 	current := parts[len(parts)-1]
 
-	matches := []string{}
-	for _, b := range builtins.AllBuiltIns() {
-		if strings.HasPrefix(b, current) {
-			matches = append(matches, b)
+	var matches []string
+
+	// First token: command
+	if len(parts) == 1 {
+		for _, b := range builtins.AllBuiltIns() {
+			if strings.HasPrefix(b, current) {
+				matches = append(matches, b)
+			}
 		}
+		for _, cmd := range cachedExecutables {
+			if strings.HasPrefix(cmd, current) {
+				matches = append(matches, cmd)
+			}
+		}
+	} else {
+		// Argument: complete file path
+		matches = completeFilePaths(current)
 	}
 
 	switch len(matches) {
 	case 0:
-		// no match - do nothing
+		// nothing
 	case 1:
-		// single match - suggestion completion
 		suffix := matches[0][len(current):]
 		fmt.Print(suffix)
-	case 2, 3, 4, 5:
-		// few matches - show suggestions
-		fmt.Print("\r")             // Return to start of line
-		fmt.Print("\033[K")         // Clear the line
-		fmt.Print("> ", line, "\n") // Print prompt and current line
-		for _, match := range matches {
-			fmt.Println(match)
-		}
-		fmt.Print("> ", line) // Reprint prompt and current line
 	default:
-		fmt.Print("\r")             // Return to start of line
-		fmt.Print("\033[K")         // Clear the line
-		fmt.Print("> ", line, "\n") // Print prompt and current line
-		fmt.Print("[too many matches]\n")
-		fmt.Print("> ", line) // Reprint prompt and current line
+		// multiple: format and show suggestions
+		fmt.Println()
+		fmt.Println(strings.Join(matches, "    "))
+		// reprint prompt and current line
+		fmt.Print("> ", line)
 	}
+}
+
+func loadExecutablesFromPATH() []string {
+	paths := strings.Split(os.Getenv("PATH"), string(os.PathListSeparator))
+	seen := make(map[string]bool)
+	var execs []string
+
+	for _, dir := range paths {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, entry := range entries {
+			name := entry.Name()
+			full := filepath.Join(dir, name)
+			if entry.Type().IsRegular() || entry.Type()&os.ModeSymlink != 0 {
+				if seen[name] {
+					continue
+				}
+				if isExecutable(full) {
+					execs = append(execs, name)
+					seen[name] = true
+				}
+			}
+		}
+	}
+
+	return execs
+}
+
+func isExecutable(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.Mode().Perm()&0111 != 0
+}
+
+func completeFilePaths(prefix string) []string {
+	dir := "."
+	base := prefix
+
+	if strings.Contains(prefix, "/") {
+		dir = filepath.Dir(prefix)
+		base = filepath.Base(prefix)
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+
+	var results []string
+	for _, entry := range entries {
+		name := entry.Name()
+		if strings.HasPrefix(name, base) {
+			full := filepath.Join(dir, name)
+			if entry.IsDir() {
+				full += "/"
+			}
+			results = append(results, full)
+		}
+	}
+
+	return results
 }

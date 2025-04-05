@@ -12,6 +12,16 @@ A lightweight command-line shell implementation written in Go. This project prov
 - `pwd` - Print working directory
 - `type` - Display information about command type
 
+### Command Line Features
+
+- **Command Completion**: Press TAB to get suggestions for:
+  - Built-in commands
+  - Executable files in PATH
+  - File and directory paths
+- **History**: Access command history using up/down arrow keys
+- **Line Editing**: Basic line editing capabilities
+- **Prompt Customization**: Configurable shell prompt
+
 ### External Command Execution
 
 - Execute any command available in the system PATH
@@ -32,11 +42,15 @@ A lightweight command-line shell implementation written in Go. This project prov
 
 ```
 goShell/
+├── cmd/
+│   └── shell/       # Main entry point
 ├── internal/
 │   ├── builtins/    # Built-in command implementations
+│   ├── completion/  # Command completion functionality
 │   ├── executor/    # Command execution logic
-│   └── parser/      # Command parsing and tokenization
-└── main.go          # Main entry point
+│   ├── parser/      # Command parsing and tokenization
+│   ├── repl/        # Read-Eval-Print Loop implementation
+│   └── utils/       # Utility functions
 ```
 
 ## Building and Running
@@ -63,9 +77,26 @@ exit
 ls -la
 cat file.txt
 python script.py
+
+# Command completion
+# Press TAB to see suggestions for:
+ls <TAB>           # Lists files and directories
+cd <TAB>           # Lists directories
+python <TAB>       # Lists Python files
 ```
 
-## Error Handling
+## Features in Detail
+
+### Command Completion
+
+- Press TAB to get suggestions for commands and files
+- Supports completion for:
+  - Built-in shell commands
+  - System executables in PATH
+  - File and directory paths
+- Shows multiple suggestions when multiple matches are found
+
+### Error Handling
 
 The shell provides clear error messages for common scenarios:
 
@@ -73,3 +104,8 @@ The shell provides clear error messages for common scenarios:
 - Execution failures
 - Invalid arguments
 - Permission issues
+- File/directory not found
+
+## Contributing
+
+Feel free to submit issues and enhancement requests!
